@@ -2,14 +2,19 @@ version: "3.6"
 
 services:
   dalai-chat-hub-api:
-    image: "ghcr.io/dhruv-bvpdev/dalai-chat-hub-api-llama-2-7b-chat:latest"
+    # image: ghcr.io/dhruv-bvpdev/dalai-chat-hub-api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: on-failure
     environment:
       MODEL: "/models/llama-2-7b-chat.bin"
 
   dalai-chat-hub-ui:
-    image: "ghcr.io/dhruv-bvpdev/dalai-chat-hub-ui:latest"
+    image: ghcr.io/dhruv-bvpdev/dalai-chat-hub-ui:latest
     ports:
       - 3000:3000
+    restart: on-failure
     environment:
       - "OPENAI_API_KEY=sk-XXXXXXXXXXXXXXXXXXXX"
       - "OPENAI_API_HOST=http://llama-gpt-api:8000"
