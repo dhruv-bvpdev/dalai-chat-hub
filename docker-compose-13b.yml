@@ -9,6 +9,9 @@ services:
     restart: on-failure
     environment:
       MODEL: "/models/llama-2-13b-chat.bin"
+      USE_MLOCK: 1
+    cap_add:
+      - IPC_LOCK
 
   dalai-chat-hub-ui:
     image: "ghcr.io/dhruv-bvpdev/dalai-chat-hub-ui:latest"
