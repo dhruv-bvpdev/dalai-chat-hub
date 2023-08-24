@@ -1,165 +1,55 @@
-import SidebarActionButton from '@/components/Buttons/SidebarActionButton'
-import ChatbarContext from '@/components/Chatbar/Chatbar.context'
-import HomeContext from '@/pages/api/home/home.context'
-import { Conversation } from '@/types/chat'
-import {
-  IconCheck,
-  IconMessage,
-  IconPencil,
-  IconTrash,
-  IconX
-} from '@tabler/icons-react'
-import {
-  DragEvent,
-  KeyboardEvent,
-  MouseEventHandler,
-  useContext,
-  useEffect,
-  useState
-} from 'react'
+import { SidebarButton } from '@/components/Sidebar/SidebarButton'
+import { IconCheck, IconTrash, IconX } from '@tabler/icons-react'
+import { useTranslation } from 'next-i18next'
+import { FC, useState } from 'react'
 
 interface Props {
-  conversation: Conversation
+  onClearConversations: () => void
 }
 
-export const ConversationComponent = ({ conversation }: Props) => {
-  const {
-    state: { selectedConversation, messageIsStreaming },
-    handleSelectConversation,
-    handleUpdateConversation
-  } = useContext(HomeContext)
+export const ClearConversations: FC<Props> = ({ onClearConversations }) => {
+  const [isConfirming, setIsConfirming] = useState<boolean>(false)
 
-  const { handleDeleteConversation } = useContext(ChatbarContext)
+  const { t } = useTranslation('sidebar')
 
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [isRenaming, setIsRenaming] = useState(false)
-  const [renameValue, setRenameValue] = useState('')
-
-  const handleEnterDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      selectedConversation && handleRename(selectedConversation)
-    }
+  const handleClearConversations = () => {
+    onClearConversations()
+    setIsConfirming(false)
   }
 
-  const handleDragStart = (
-    e: DragEvent<HTMLButtonElement>,
-    conversation: Conversation
-  ) => {
-    if (e.dataTransfer) {
-      e.dataTransfer.setData('conversation', JSON.stringify(conversation))
-    }
-  }
+  return isConfirming ? (
+    <div className="flex w-full cursor-pointer items-center rounded-lg py-3 px-3 hover:bg-gray-500/10">
+      <IconTrash size={18} />
 
-  const handleRename = (conversation: Conversation) => {
-    if (renameValue.trim().length > 0) {
-      handleUpdateConversation(conversation, {
-        key: 'name',
-        value: renameValue
-      })
-      setRenameValue('')
-      setIsRenaming(false)
-    }
-  }
+      <div className="ml-3 flex-1 text-left text-[12.5px] leading-3 text-white">
+        {t('Are you sure?')}
+      </div>
 
-  const handleConfirm: MouseEventHandler<HTMLButtonElement> = e => {
-    e.stopPropagation()
-    if (isDeleting) {
-      handleDeleteConversation(conversation)
-    } else if (isRenaming) {
-      handleRename(conversation)
-    }
-    setIsDeleting(false)
-    setIsRenaming(false)
-  }
+      <div className="flex w-[40px]">
+        <IconCheck
+          className="ml-auto mr-1 min-w-[20px] text-neutral-400 hover:text-neutral-100"
+          size={18}
+          onClick={e => {
+            e.stopPropagation()
+            handleClearConversations()
+          }}
+        />
 
-  const handleCancel: MouseEventHandler<HTMLButtonElement> = e => {
-    e.stopPropagation()
-    setIsDeleting(false)
-    setIsRenaming(false)
-  }
-
-  const handleOpenRenameModal: MouseEventHandler<HTMLButtonElement> = e => {
-    e.stopPropagation()
-    setIsRenaming(true)
-    selectedConversation && setRenameValue(selectedConversation.name)
-  }
-  const handleOpenDeleteModal: MouseEventHandler<HTMLButtonElement> = e => {
-    e.stopPropagation()
-    setIsDeleting(true)
-  }
-
-  useEffect(() => {
-    if (isRenaming) {
-      setIsDeleting(false)
-    } else if (isDeleting) {
-      setIsRenaming(false)
-    }
-  }, [isRenaming, isDeleting])
-
-  return (
-    <div className="relative flex items-center">
-      {isRenaming && selectedConversation?.id === conversation.id ? (
-        <div className="flex w-full items-center gap-3 rounded-lg bg-[#1d1c21]/90 p-3">
-          <IconMessage size={18} />
-          <input
-            className="mr-12 flex-1 overflow-hidden overflow-ellipsis border-neutral-400 bg-transparent text-left text-[12.5px] leading-3 text-white outline-none focus:border-neutral-100"
-            type="text"
-            value={renameValue}
-            onChange={e => setRenameValue(e.target.value)}
-            onKeyDown={handleEnterDown}
-            autoFocus
-          />
-        </div>
-      ) : (
-        <button
-          className={`flex w-full cursor-pointer items-center gap-3 rounded-lg p-3 text-sm transition-colors duration-200 hover:bg-[#1d1c21]/90 ${
-            messageIsStreaming ? 'disabled:cursor-not-allowed' : ''
-          } ${
-            selectedConversation?.id === conversation.id
-              ? 'bg-[#1d1c21]/90'
-              : ''
-          }`}
-          onClick={() => handleSelectConversation(conversation)}
-          disabled={messageIsStreaming}
-          draggable="true"
-          onDragStart={e => handleDragStart(e, conversation)}
-        >
-          <IconMessage size={18} />
-          <div
-            className={`relative max-h-5 flex-1 overflow-hidden text-ellipsis whitespace-nowrap break-all text-left text-[12.5px] leading-3 ${
-              selectedConversation?.id === conversation.id ? 'pr-12' : 'pr-1'
-            }`}
-          >
-            {conversation.name}
-          </div>
-        </button>
-      )}
-
-      {(isDeleting || isRenaming) &&
-        selectedConversation?.id === conversation.id && (
-          <div className="absolute right-1 z-10 flex text-gray-300">
-            <SidebarActionButton handleClick={handleConfirm}>
-              <IconCheck size={18} />
-            </SidebarActionButton>
-            <SidebarActionButton handleClick={handleCancel}>
-              <IconX size={18} />
-            </SidebarActionButton>
-          </div>
-        )}
-
-      {selectedConversation?.id === conversation.id &&
-        !isDeleting &&
-        !isRenaming && (
-          <div className="absolute right-1 z-10 flex text-gray-300">
-            <SidebarActionButton handleClick={handleOpenRenameModal}>
-              <IconPencil size={18} />
-            </SidebarActionButton>
-            <SidebarActionButton handleClick={handleOpenDeleteModal}>
-              <IconTrash size={18} />
-            </SidebarActionButton>
-          </div>
-        )}
+        <IconX
+          className="ml-auto min-w-[20px] text-neutral-400 hover:text-neutral-100"
+          size={18}
+          onClick={e => {
+            e.stopPropagation()
+            setIsConfirming(false)
+          }}
+        />
+      </div>
     </div>
+  ) : (
+    <SidebarButton
+      text={t('Clear conversations')}
+      icon={<IconTrash size={18} />}
+      onClick={() => setIsConfirming(true)}
+    />
   )
 }
